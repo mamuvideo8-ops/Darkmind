@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b10">
+<title>DarkMind</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230b0b10' stroke='%238b5cf6' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%238b5cf6'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#0b0b10;--panel:#12121a;--panel2:#1a1a25;--border:#262636;--text:#ececf4;--muted:#8d8da6;--accent:#8b5cf6;--danger:#f87171;--ok:#34d399}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari","Noto Naskh Arabic",sans-serif;font-size:16px}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+svg{width:20px;height:20px;display:block}
+.app{display:flex;height:100dvh;overflow:hidden}
+/* sidebar */
+.sidebar{width:288px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s}
+.sb-top{padding:14px;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.3px}
+.orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,var(--accent) 35%,#1b1035 100%);box-shadow:0 0 18px var(--accent);flex-shrink:0}
+.newbtn{display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:600}
+.newbtn svg{width:18px;height:18px}
+.search{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);outline:none}
+.search:focus{border-color:var(--accent)}
+.list{flex:1;overflow:auto;padding:4px 8px}
+.item{display:flex;align-items:center;gap:6px;padding:10px 10px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.item:hover{background:var(--panel2)}
+.item.on{background:var(--panel2);color:var(--text)}
+.item .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px}
+.item button{opacity:.55;padding:4px;border-radius:6px;color:var(--muted)}
+.item button:hover{opacity:1;color:var(--text)}
+.item svg{width:15px;height:15px}
+.sb-foot{padding:10px;border-top:1px solid var(--border);display:flex;gap:6px}
+.sb-foot button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;color:var(--muted);font-size:14px;background:var(--panel2)}
+.sb-foot button:hover{color:var(--text)}
+.empty-list{color:var(--muted);font-size:14px;padding:14px;text-align:center}
+.overlay{display:none}
+/* main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);background:rgba(11,11,16,.85);backdrop-filter:blur(8px);z-index:5}
+.ib{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--muted);flex-shrink:0}
+.ib:hover{background:var(--panel2);color:var(--text)}
+.ib.on{color:#fff;background:var(--accent)}
+.ib.rec{color:#fff;background:#ef4444;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(239,68,68,.15)}}
+.pill{background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:7px 12px;font-size:13.5px;outline:none;max-width:44vw;text-overflow:ellipsis}
+.pill:focus{border-color:var(--accent)}
+.ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--muted);font-size:14.5px;text-align:center}
+.menu-only{display:none}
+.chat{flex:1;overflow:auto;padding:18px 0 8px;scroll-behavior:smooth}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+.msg{margin:0 0 20px;display:flex;gap:12px;animation:in .25s}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.msg.user{justify-content:flex-end}
+.bubble{background:var(--panel2);border:1px solid var(--border);padding:10px 14px;border-radius:18px 18px 4px 18px;max-width:86%;overflow-wrap:anywhere;line-height:1.5}
+.av{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 30%,#fff 0,var(--accent) 35%,#1b1035 100%);box-shadow:0 0 12px var(--accent);margin-top:2px}
+.mbody{flex:1;min-width:0}
+.mtxt{line-height:1.65;overflow-wrap:anywhere}
+.mtxt p{margin:0 0 10px}.mtxt h2,.mtxt h3,.mtxt h4,.mtxt h5{margin:16px 0 8px}
+.mtxt ul,.mtxt ol{margin:0 0 10px;padding-left:22px}.mtxt li{margin:3px 0}
+.mtxt code{background:var(--panel2);padding:2px 6px;border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em}
+.mtxt a{color:var(--accent)}
+.mtxt blockquote{margin:0 0 10px;padding:4px 14px;border-left:3px solid var(--accent);color:var(--muted)}
+.mtxt hr{border:0;border-top:1px solid var(--border);margin:14px 0}
+.mtxt table{border-collapse:collapse;margin:0 0 10px;display:block;overflow:auto}
+.mtxt th,.mtxt td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+.mtxt th{background:var(--panel2)}
+.code{background:#0e0e16;border:1px solid var(--border);border-radius:12px;margin:0 0 12px;overflow:hidden}
+.codebar{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:var(--panel2);color:var(--muted);font-size:12.5px}
+.codebar button{color:var(--muted);font-size:12.5px;padding:2px 6px}
+.code pre{margin:0;padding:12px;overflow:auto}
+.code code{background:none;padding:0;font-size:13.5px;line-height:1.5}
+.cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:-2px;margin-left:2px;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
+.dots{display:inline-flex;gap:5px;padding:8px 0}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dot 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes dot{40%{transform:translateY(-5px);background:var(--accent)}}
+.acts{display:flex;gap:2px;margin-top:2px}
+.acts button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.acts button:hover{background:var(--panel2);color:var(--text)}
+.acts svg{width:16px;height:16px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.tool{display:inline-block;padding:9px 14px;border-radius:12px;background:var(--panel2);border:1px solid var(--accent);color:var(--text);text-decoration:none;font-size:14px}
+.att{max-width:220px;max-height:200px;border-radius:12px;display:block;margin:0 0 8px;border:1px solid var(--border)}
+.chip{display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.err{color:var(--danger)}
+.welcome{text-align:center;padding:9vh 16px 0}
+.welcome .orb{width:74px;height:74px;margin:0 auto 18px;animation:float 4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+.welcome h1{margin:0 0 6px;font-size:30px;letter-spacing:.5px}
+.welcome p{margin:0 0 26px;color:var(--muted)}
+.sugs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;max-width:640px;margin:0 auto}
+.sug{padding:14px;border-radius:14px;background:var(--panel);border:1px solid var(--border);text-align:left;color:var(--text);font-size:14.5px;line-height:1.4}
+.sug:hover{border-color:var(--accent);background:var(--panel2)}
+/* composer */
+.comp-wrap{padding:8px 12px calc(12px + env(safe-area-inset-bottom))}
+.comp{max-width:820px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:8px 8px 6px;transition:border-color .2s}
+.comp:focus-within{border-color:var(--accent)}
+.comp textarea{width:100%;background:none;border:0;outline:none;resize:none;padding:8px 10px;max-height:160px;line-height:1.45}
+.comp textarea::placeholder{color:var(--muted)}
+.crow{display:flex;align-items:center;gap:2px}
+.crow .sp{flex:1}
+.send{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center}
+.send.stop{background:#ef4444}
+.pend{display:flex;gap:8px;padding:4px 8px;flex-wrap:wrap}
+.pend .th{position:relative}
+.pend img{width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid var(--border);display:block}
+.pend .th button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#000;color:#fff;display:grid;place-items:center;border:1px solid var(--border)}
+.pend .th svg{width:12px;height:12px}
+.banner{display:none;max-width:820px;margin:0 auto 8px;padding:8px 14px;border-radius:12px;background:rgba(139,92,246,.15);border:1px solid var(--accent);font-size:13.5px}
+.banner.on{display:block}
+/* live panel */
+.live{position:absolute;right:12px;bottom:150px;width:210px;background:var(--panel);border:1px solid var(--accent);border-radius:16px;overflow:hidden;display:none;z-index:8;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.live.on{display:block}
+.live video{width:100%;display:block;background:#000;max-height:260px;object-fit:cover}
+.live video.mirror{transform:scaleX(-1)}
+.lbar{display:flex;align-items:center;gap:2px;padding:4px 6px;font-size:12px;color:var(--muted)}
+.lbar .sp{flex:1}
+.lbar button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text)}
+.lbar button:hover{background:var(--panel2)}
+.lbar svg{width:17px;height:17px}
+.lauto{display:flex;align-items:center;gap:6px;padding:0 10px 8px;font-size:12px;color:var(--muted)}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:30;padding:14px}
+.modal.on{display:flex}
+.sheet{background:var(--panel);border:1px solid var(--border);border-radius:20px;width:100%;max-width:560px;max-height:92dvh;overflow:auto;padding:18px}
+.sheet h2{margin:0 0 4px;font-size:20px}
+.sheet h3{margin:20px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--accent)}
+.sheet .hd{display:flex;justify-content:space-between;align-items:center}
+.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.field label{font-size:13.5px;color:var(--muted)}
+.field input[type=text],.field input[type=password],.field select,.field textarea{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;outline:none;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{min-height:90px;resize:vertical}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;font-size:15px}
+.row small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.sw{appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:99px;background:var(--border);position:relative;flex-shrink:0;transition:.2s;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw:checked{background:var(--accent)}.sw:checked::after{left:23px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{padding:10px 14px;border-radius:10px;background:var(--panel2);border:1px solid var(--border);font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.dng{color:var(--danger)}
+.note{font-size:12.5px;color:var(--muted);line-height:1.5}
+.note a{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);background:#000;border:1px solid var(--border);padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:88vw;font-size:14px}
+.toast.on{opacity:1;transform:translateX(-50%)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+@media (max-width:820px){
+ .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:20;transform:translateX(-100%)}
+ body.sb-open .sidebar{transform:none}
+ body.sb-open .overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:15}
+ .menu-only{display:grid}
+ .live{bottom:170px;width:170px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="brand"><span class="orb"></span>DarkMind</div>
+      <button class="newbtn" id="newBtn"><i data-i="plus" style="display:contents"></i> New chat</button>
+      <input class="search" id="search" placeholder="Search chats…" autocomplete="off">
+    </div>
+    <div class="list" id="list"></div>
+    <div class="sb-foot">
+      <button id="settingsBtn"><i data-i="sliders" style="display:contents"></i> Settings</button>
+      <button id="exportBtn"><i data-i="download" style="display:contents"></i> Export</button>
+    </div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <section class="main">
+    <header class="top">
+      <button class="ib menu-only" id="menuBtn" data-i="menu" aria-label="Menu"></button>
+      <select class="pill" id="modeSel" title="Mode"></select>
+      <div class="ttl" id="ttl">New chat</div>
+      <select class="pill" id="modelSel" title="Gemini model"></select>
+      <button class="ib" id="dlChat" data-i="download" title="Download this chat"></button>
+    </header>
+
+    <div class="chat" id="chat"><div class="wrap" id="wrap"></div></div>
+
+    <div class="live" id="live">
+      <video id="liveVid" playsinline muted autoplay></video>
+      <div class="lbar"><span id="liveLabel"></span><span class="sp"></span>
+        <button id="snapBtn" data-i="camera" title="Attach this frame"></button>
+        <button id="flipBtn" data-i="refresh" title="Flip camera"></button>
+        <button id="liveClose" data-i="x" title="Stop"></button>
+      </div>
+      <label class="lauto"><input type="checkbox" id="autoFrame"> Attach frame with every message</label>
+    </div>
+
+    <div class="comp-wrap">
+      <div class="banner" id="banner"></div>
+      <div class="comp">
+        <div class="pend" id="pend"></div>
+        <textarea id="inp" rows="1" placeholder="DarkMind se kuch bhi poochho…"></textarea>
+        <div class="crow">
+          <button class="ib" id="attachBtn" data-i="clip" title="Attach image"></button>
+          <button class="ib" id="camBtn" data-i="camera" title="Camera"></button>
+          <button class="ib" id="scrBtn" data-i="monitor" title="Share screen"></button>
+          <button class="ib" id="hfBtn" data-i="headphones" title="Hands-free voice mode"></button>
+          <span class="sp"></span>
+          <button class="ib" id="micBtn" data-i="mic" title="Speak"></button>
+          <button class="send" id="sendBtn" data-i="send" title="Send"></button>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+  </section>
+</div>
+
+<div class="modal" id="modal">
+ <div class="sheet">
+  <div class="hd"><h2>Settings</h2><button class="ib" id="closeSet" data-i="x"></button></div>
+
+  <h3>Gemini</h3>
+  <div class="field"><label>API key</label>
+    <input type="password" id="apiKey" data-s="apiKey" placeholder="AIza…" autocomplete="off" spellcheck="false">
+    <div class="note">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Key sirf aapke browser mein save hoti hai aur sirf Google ko jaati hai.</div>
+  </div>
+  <div class="field"><label>Model</label><select id="setModel" data-s="model"></select></div>
+  <div class="btns"><button class="btn pri" id="loadModels">Load all models</button><button class="btn" id="showKey">Show / hide key</button></div>
+  <div class="field"><label>Creativity (temperature)</label><input type="range" min="0" max="2" step="0.1" data-s="temp"></div>
+
+  <h3>Voice</h3>
+  <label class="row"><span>Jawab bol ke bhi suno<small>Har reply text ke saath awaaz mein</small></span><input type="checkbox" class="sw" data-s="autoSpeak"></label>
+  <div class="field"><label>Voice</label><select id="voiceSel" data-s="voiceURI"></select></div>
+  <div class="field"><label>Speed</label><input type="range" min="0.5" max="2" step="0.1" data-s="rate"></div>
+  <div class="field"><label>Pitch</label><input type="range" min="0.5" max="2" step="0.1" data-s="pitch"></div>
+  <div class="btns"><button class="btn" id="testVoice">Test voice</button></div>
+  <div class="field"><label>Bolne ki bhasha (voice input)</label>
+    <select data-s="lang"><option value="en-IN">English (India)</option><option value="hi-IN">हिन्दी</option><option value="ur-PK">اردو</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="ar-SA">العربية</option><option value="bn-IN">বাংলা</option><option value="pa-IN">ਪੰਜਾਬੀ</option></select></div>
+  <label class="row"><span>Voice input ko apne aap bhejo<small>Mic band hote hi message chala jaye</small></span><input type="checkbox" class="sw" data-s="autoSend"></label>
+  <label class="row"><span>Wake word (hands-free mode mein)<small>Sirf "Hey Mind" bolne par jawab de</small></span><input type="checkbox" class="sw" data-s="wake"></label>
+  <div class="field"><label>Wake phrase</label><input type="text" data-s="wakeWord" placeholder="hey mind"></div>
+
+  <h3>Assistant</h3>
+  <label class="row"><span>Phone tools<small>Timer, alarm, call/SMS/WhatsApp buttons, website open</small></span><input type="checkbox" class="sw" data-s="tools"></label>
+  <label class="row"><span>Screen on rakho (background mode)<small>Tab khula rakho, screen sleep nahi hogi</small></span><input type="checkbox" class="sw" data-s="keepAwake"></label>
+  <div class="field"><label>Custom mode prompt</label><textarea data-s="customPrompt" placeholder="Apne mode ke rules likho, jaise: 'Tum ek coding mentor ho…'"></textarea></div>
+
+  <h3>Data</h3>
+  <div class="btns">
+    <button class="btn" id="importBtn">Import chats</button>
+    <button class="btn" id="exportBtn2">Export chats</button>
+    <button class="btn dng" id="wipeBtn">Delete everything</button>
+  </div>
+  <input type="file" id="importFile" accept="application/json" hidden>
+  <p class="note">Chats aapke phone/PC ke browser mein hi save hoti hain (localStorage). Browser data clear karoge to chats chali jayengi, isliye kabhi kabhi Export kar lo.</p>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const ICONS={
+ menu:'<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>',
+ plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+ send:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+ mic:'<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+ camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+ monitor:'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+ clip:'<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+ stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',
+ vol:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+ copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+ refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+ sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+ trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+ edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+ headphones:'<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>',
+ x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+ download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'
+};
+const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+document.querySelectorAll('[data-i]').forEach(e=>e.innerHTML=ic(e.dataset.i));
+const store={
+ get(k,d){try{const v=localStorage.getItem('dm_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+ set(k,v){localStorage.setItem('dm_'+k,JSON.stringify(v))}
+};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let toastT;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3200)}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- constants ---------- */
+const BASE='https://generativelanguage.googleapis.com/v1beta';
+const FALLBACK=['gemini-flash-latest','gemini-pro-latest','gemini-flash-lite-latest','gemini-2.5-flash','gemini-2.5-pro','gemini-2.5-flash-lite','gemini-2.0-flash'];
+const MODES={
+ buddy:{name:'Friendly Buddy',color:'#8b5cf6',prompt:'You are a warm, friendly and funny buddy. Talk casually like a close friend, be supportive, curious and kind. Keep replies conversational and not too long unless asked.',sugs:['Aaj ka din kaisa tha? Baat karte hain','Mujhe ek mazedaar fact batao','Ek message likhne mein meri help karo','Kuch interesting sochne ko do']},
+ study:{name:'Study Coach',color:'#22d3ee',prompt:'You are a patient study coach. Explain step by step in simple words with examples, check understanding with small questions, and offer quizzes and revision plans.',sugs:['Photosynthesis simple tareeke se samjhao','Mujhe 5 sawaal ka quiz do','Mera study timetable banao','Algebra step by step sikhao']},
+ motivator:{name:'Motivator',color:'#f59e0b',prompt:'You are an energetic motivator. Encourage the user, help them set clear goals, break them into small actions and keep them accountable, while staying honest and realistic.',sugs:['Mujhe aaj kaam shuru karne ki motivation do','Mera 30 din ka goal plan banao','Bura din tha, himmat do','Subah jaldi uthne ka tareeka batao']},
+ funny:{name:'Funny Mode',color:'#f472b6',prompt:'You are a hilarious assistant. Use clean, witty humour, jokes and playful roasts (never hurtful), while still giving correct answers.',sugs:['Ek zabardast joke sunao','Mujhe halka sa roast karo','Funny shayari likho','Ek pagal sa idea batao']},
+ custom:{name:'Custom Mode',color:'#34d399',prompt:'',sugs:['Hello! Tum kya kya kar sakte ho?','Aaj ki date aur time batao','5 minute ka timer lagao','Mujhe ek idea do']}
+};
+const TOOLS=[
+ {name:'get_datetime',description:"Returns the user's current local date and time."},
+ {name:'set_timer',description:'Start a countdown timer that alerts the user with sound, notification and voice when finished (works while this page stays open).',parameters:{type:'OBJECT',properties:{seconds:{type:'NUMBER',description:'Duration in seconds'},label:{type:'STRING',description:'What the timer is for'}},required:['seconds']}},
+ {name:'set_alarm',description:'Set an alarm for a clock time (next occurrence) that rings while this page stays open.',parameters:{type:'OBJECT',properties:{hour:{type:'NUMBER',description:'Hour 0-23'},minute:{type:'NUMBER',description:'Minute 0-59'},label:{type:'STRING',description:'Alarm label'}},required:['hour','minute']}},
+ {name:'open_website',description:'Show the user a button that opens a website or a search/maps/YouTube URL.',parameters:{type:'OBJECT',properties:{url:{type:'STRING',description:'Full https URL'},label:{type:'STRING',description:'Button text'}},required:['url']}},
+ {name:'call_number',description:'Show the user a button to call a phone number.',parameters:{type:'OBJECT',properties:{number:{type:'STRING',description:'Phone number'},name:{type:'STRING',description:'Contact name if known'}},required:['number']}},
+ {name:'send_sms',description:'Show the user a button that opens the SMS app with a prefilled message.',parameters:{type:'OBJECT',properties:{number:{type:'STRING',description:'Phone number'},message:{type:'STRING',description:'Message text'}},required:['number','message']}},
+ {name:'send_whatsapp',description:'Show the user a button that opens WhatsApp with a prefilled message.',parameters:{type:'OBJECT',properties:{number:{type:'STRING',description:'Phone number in international format, digits only'},message:{type:'STRING',description:'Message text'}},required:['number','message']}},
+ {name:'change_mode',description:'Switch the assistant personality mode.',parameters:{type:'OBJECT',properties:{mode:{type:'STRING',description:'One of buddy, study, motivator, funny, custom'}},required:['mode']}}
+];
+const DEF={apiKey:'',model:'gemini-flash-latest',voiceURI:'',rate:1,pitch:1,autoSpeak:true,lang:'en-IN',temp:0.8,tools:true,keepAwake:false,wake:false,wakeWord:'hey mind',autoSend:true,customPrompt:'',mode:'buddy',frames:true};
+
+/* ---------- state ---------- */
+let S=Object.assign({},DEF,store.get('settings',{}));
+let chats=store.get('chats',[]);
+let models=store.get('models',[]);
+let currentId=store.get('current',null);
+let pending=[];
+let busy=false,abortC=null,speaking=false,speakId=0;
+const saveS=()=>{try{store.set('settings',S)}catch(e){}};
+const cur=()=>chats.find(c=>c.id===currentId)||null;
+function saveChats(){
+ const slim=chats.map(c=>({id:c.id,title:c.title,mode:c.mode,created:c.created,updated:c.updated,messages:c.messages.map(m=>({role:m.role,text:m.text,t:m.t,actions:m.actions||[],error:!!m.error,imgCount:(m.images||[]).length||m.imgCount||0}))}));
+ try{store.set('chats',slim);store.set('current',currentId)}catch(e){toast('Storage full — purani chats export karke delete karo')}
+}
+
+/* ---------- markdown ---------- */
+function inline(s){
+ s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+ s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+ s=s.replace(/(^|[^*\w])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+ s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+ return s;
+}
+function md(src){
+ const blocks=[];
+ let t=String(src||'').replace(/```([\w+-]*)\n?([\s\S]*?)(```|$)/g,(m,l,c)=>{
+  blocks.push(`<div class="code"><div class="codebar"><span>${esc(l||'code')}</span><button class="copycode">Copy</button></div><pre><code>${esc(c.replace(/\n$/,''))}</code></pre></div>`);
+  return '\n\u0000'+(blocks.length-1)+'\u0000\n';
+ });
+ t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ const lines=t.split('\n');let html='',list=null;
+ const close=()=>{if(list){html+='</'+list+'>';list=null}};
+ for(let i=0;i<lines.length;i++){
+  const L=lines[i];let m;
+  if(/^\u0000\d+\u0000$/.test(L.trim())){close();html+=blocks[+L.trim().slice(1,-1)];continue}
+  if((m=L.match(/^(#{1,4})\s+(.*)/))){close();const n=m[1].length+1;html+=`<h${n}>${inline(m[2])}</h${n}>`;continue}
+  if((m=L.match(/^\s*[-*•]\s+(.*)/))){if(list!=='ul'){close();html+='<ul>';list='ul'}html+=`<li>${inline(m[1])}</li>`;continue}
+  if((m=L.match(/^\s*\d+[.)]\s+(.*)/))){if(list!=='ol'){close();html+='<ol>';list='ol'}html+=`<li>${inline(m[1])}</li>`;continue}
+  if(/^\s*\|.*\|\s*$/.test(L)&&i+1<lines.length&&/^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i+1])&&lines[i+1].includes('-')){
+   close();const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
+   let h='<table><thead><tr>'+cells(L).map(c=>`<th>${inline(c)}</th>`).join('')+'</tr></thead><tbody>';i+=2;
+   while(i<lines.length&&/^\s*\|.*\|\s*$/.test(lines[i])){h+='<tr>'+cells(lines[i]).map(c=>`<td>${inline(c)}</td>`).join('')+'</tr>';i++}
+   i--;html+=h+'</tbody></table>';continue}
+  if(/^\s*(---|\*\*\*|___)\s*$/.test(L)){close();html+='<hr>';continue}
+  if((m=L.match(/^&gt;\s?(.*)/))){close();html+=`<blockquote>${inline(m[1])}</blockquote>`;continue}
+  if(!L.trim()){close();continue}
+  close();html+=`<p>${inline(L)}</p>`;
+ }
+ close();return html;
+}
+
+/* ---------- chats ---------- */
+function newChat(){
+ const c=cur();
+ if(c&&!c.messages.length){render();return c}
+ const n={id:uid(),title:'New chat',mode:S.mode,created:Date.now(),updated:Date.now(),messages:[]};
+ chats.unshift(n);currentId=n.id;saveChats();renderList();render();return n;
+}
+function openChat(id){
+ const c=chats.find(x=>x.id===id);if(!c)return;
+ stopAll();currentId=id;if(MODES[c.mode]){S.mode=c.mode;saveS();$('#modeSel').value=S.mode;applyMode()}
+ store.set('current',id);renderList();render();document.body.classList.remove('sb-open');
+}
+function renderList(){
+ const q=$('#search').value.trim().toLowerCase();
+ const items=chats.filter(c=>!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>(m.text||'').toLowerCase().includes(q)));
+ const el=$('#list');
+ if(!items.length){el.innerHTML='<div class="empty-list">'+(q?'Kuch nahi mila':'Abhi koi chat nahi')+'</div>';return}
+ el.innerHTML=items.map(c=>`<div class="item ${c.id===currentId?'on':''}" data-id="${c.id}"><span class="t">${esc(c.title)}</span><button data-a="ren" title="Rename">${ic('edit')}</button><button data-a="del" title="Delete">${ic('trash')}</button></div>`).join('');
+}
+$('#list').addEventListener('click',e=>{
+ const it=e.target.closest('.item');if(!it)return;const id=it.dataset.id;
+ const b=e.target.closest('button');
+ if(b&&b.dataset.a==='del'){if(confirm('Ye chat delete karni hai?')){chats=chats.filter(c=>c.id!==id);if(currentId===id)currentId=null;saveChats();renderList();render()}return}
+ if(b&&b.dataset.a==='ren'){const c=chats.find(x=>x.id===id);const n=prompt('Chat ka naam',c.title);if(n&&n.trim()){c.title=n.trim().slice(0,60);saveChats();renderList();render()}return}
+ openChat(id);
+});
+$('#search').addEventListener('input',renderList);
+$('#newBtn').onclick=()=>{stopAll();newChat();document.body.classList.remove('sb-open');$('#inp').focus()};
+
+/* ---------- rendering ---------- */
+function greeting(){const h=new Date().getHours();return h<5?'Raat jaag rahe ho?':h<12?'Good morning!':h<17?'Good afternoon!':h<21?'Good evening!':'Good night!'}
+function msgHtml(m,i,last){
+ const imgs=(m.images||[]).map(im=>`<img class="att" src="data:${im.mime};base64,${im.b64}" alt="">`).join('');
+ const chip=(!(m.images&&m.images.length)&&m.imgCount)?`<div class="chip">Image x${m.imgCount}</div>`:'';
+ if(m.role==='user')return `<div class="bubble">${imgs}${chip}${esc(m.text||'').replace(/\n/g,'<br>')}</div>`;
+ const tools=(m.actions||[]).length?`<div class="tools">${m.actions.map(a=>`<a class="tool" href="${esc(a.href)}" target="_blank" rel="noopener">${esc(a.label)}</a>`).join('')}</div>`:'';
+ const wait=m.busy&&!m.text?'<div class="dots"><i></i><i></i><i></i></div>':'';
+ const body=m.error?`<div class="mtxt err">${md(m.text)}</div>`:`<div class="mtxt">${imgs}${md(m.text)}${m.busy&&m.text?'<span class="cursor"></span>':''}</div>`;
+ const acts=m.busy?'':`<div class="acts"><button data-act="copy" title="Copy">${ic('copy')}</button><button data-act="speak" title="Read aloud">${ic('vol')}</button>${last?`<button data-act="regen" title="Regenerate">${ic('refresh')}</button>`:''}</div>`;
+ return `<div class="av"></div><div class="mbody">${wait}${body}${tools}${acts}</div>`;
+}
+function render(){
+ const c=cur(),w=$('#wrap');
+ $('#ttl').textContent=c?c.title:'New chat';
+ if(!c||!c.messages.length){
+  const m=MODES[S.mode];
+  w.innerHTML=`<div class="welcome"><div class="orb"></div><h1>${greeting()}</h1><p>Main DarkMind hoon — ${esc(m.name)} mode on hai. Kuch bhi poochho.</p><div class="sugs">${m.sugs.map(s=>`<button class="sug">${esc(s)}</button>`).join('')}</div></div>`;
+  return;
+ }
+ w.innerHTML='';
+ c.messages.forEach((m,i)=>{const d=document.createElement('div');d.className='msg '+m.role;d.dataset.idx=i;m._el=d;d.innerHTML=msgHtml(m,i,i===c.messages.length-1);w.appendChild(d)});
+ scrollEnd(true);
+}
+function scrollEnd(force){const c=$('#chat');if(force||c.scrollHeight-c.scrollTop-c.clientHeight<220)c.scrollTop=c.scrollHeight}
+let raf=0;
+function updateMsg(m,final){
+ const run=()=>{raf=0;const c=cur();if(!m._el||!c)return;const i=c.messages.indexOf(m);m._el.dataset.idx=i;m._el.innerHTML=msgHtml(m,i,i===c.messages.length-1);scrollEnd(final)};
+ if(final){cancelAnimationFrame(raf);run()}else if(!raf)raf=requestAnimationFrame(run);
+}
+$('#wrap').addEventListener('click',e=>{
+ const s=e.target.closest('.sug');if(s){send(s.textContent);return}
+ const cc=e.target.closest('.copycode');if(cc){const t=cc.closest('.code').querySelector('code').textContent;navigator.clipboard.writeText(t).then(()=>toast('Code copy ho gaya'));return}
+ const b=e.target.closest('[data-act]');if(!b)return;
+ const c=cur();const el=b.closest('.msg');const m=c&&c.messages[+el.dataset.idx];if(!m)return;
+ if(b.dataset.act==='copy')navigator.clipboard.writeText(m.text).then(()=>toast('Copy ho gaya'));
+ if(b.dataset.act==='speak')speak(m.text,true);
+ if(b.dataset.act==='regen'&&!busy){c.messages.pop();run(c)}
+});
+
+/* ---------- Gemini ---------- */
+function systemPrompt(){
+ const m=MODES[S.mode]||MODES.buddy;
+ const base=`You are DarkMind, a smart, capable AI assistant that can answer any question, like Gemini. Reply in the same language and script the user writes in (if the user writes Hinglish in Roman letters, reply in Roman Hinglish; if Hindi in Devanagari, reply in Devanagari; if Urdu in Urdu script). Be accurate, helpful and honest; use Markdown when it helps. Your replies are also read aloud by text-to-speech, so keep wording natural and avoid huge tables unless asked. If the user shares camera or screen images, look carefully and reason about them. When the user asks for a timer, alarm, call, SMS, WhatsApp message or opening a website, use the provided tools. Current date and time: ${new Date().toString()}.`;
+ return base+'\n\nPersonality mode: '+m.name+'. '+(S.mode==='custom'?(S.customPrompt||'Be helpful.'):m.prompt);
+}
+function buildContents(msgs){
+ const userIdx=msgs.map((m,i)=>m.role==='user'?i:-1).filter(i=>i>=0).slice(-3);
+ return msgs.filter(m=>!m.error&&(m.text||(m.images&&m.images.length))).map((m,i)=>{
+  const parts=[];
+  if(m.role==='user'&&m.images&&userIdx.includes(msgs.indexOf(m)))m.images.forEach(im=>parts.push({inlineData:{mimeType:im.mime,data:im.b64}}));
+  parts.push({text:m.text||'Describe what you see.'});
+  return {role:m.role,parts};
+ });
+}
+async function callGemini(contents,signal,onText,o){
+ o=o||{tools:S.tools,sys:true};
+ const sys=systemPrompt();let c=contents;
+ const body={generationConfig:{temperature:+S.temp}};
+ if(o.sys)body.systemInstruction={parts:[{text:sys}]};
+ else{c=JSON.parse(JSON.stringify(contents));const f=c.find(x=>x.role==='user');if(f)f.parts.unshift({text:'[Instructions]\n'+sys+'\n[End instructions]\n'})}
+ body.contents=c;
+ if(o.tools)body.tools=[{functionDeclarations:TOOLS}];
+ if(/image/i.test(S.model))body.generationConfig.responseModalities=['TEXT','IMAGE'];
+ const res=await fetch(`${BASE}/models/${encodeURIComponent(S.model)}:streamGenerateContent?alt=sse`,{method:'POST',signal,headers:{'Content-Type':'application/json','x-goog-api-key':S.apiKey},body:JSON.stringify(body)});
+ if(!res.ok){
+  let msg='';try{const j=await res.json();msg=(j.error&&j.error.message)||JSON.stringify(j)}catch(e){msg=res.status+' '+res.statusText}
+  if(res.status===400){
+   if(o.tools&&/function|tool/i.test(msg))return callGemini(contents,signal,onText,{tools:false,sys:o.sys});
+   if(o.sys&&/instruction|system/i.test(msg))return callGemini(contents,signal,onText,{tools:o.tools,sys:false});
+  }
+  if(/API key/i.test(msg))msg+='\n\nSettings mein sahi API key daalo.';
+  throw new Error(msg);
+ }
+ const reader=res.body.getReader(),dec=new TextDecoder();
+ let buf='',text='',calls=[],raw=[],imgs=[],finish='';
+ const handle=d=>{
+  if(!d||d==='[DONE]')return;let j;try{j=JSON.parse(d)}catch(e){return}
+  if(j.error)throw new Error(j.error.message);
+  if(j.promptFeedback&&j.promptFeedback.blockReason)throw new Error('Blocked: '+j.promptFeedback.blockReason);
+  const cand=j.candidates&&j.candidates[0];if(!cand)return;
+  if(cand.finishReason)finish=cand.finishReason;
+  for(const p of (cand.content&&cand.content.parts)||[]){
+   if(p.thought)continue;raw.push(p);
+   if(p.text){text+=p.text;onText(p.text)}
+   if(p.functionCall)calls.push(p.functionCall);
+   if(p.inlineData)imgs.push(p.inlineData);
+  }
+ };
+ while(true){
+  const {done,value}=await reader.read();if(done)break;
+  buf+=dec.decode(value,{stream:true});
+  const lines=buf.split('\n');buf=lines.pop();
+  for(const l of lines)if(l.startsWith('data:'))handle(l.slice(5).trim());
+ }
+ if(buf.startsWith('data:'))handle(buf.slice(5).trim());
+ if(!text&&!calls.length&&!imgs.length)throw new Error('Khaali jawab aaya'+(finish?' ('+finish+')':'')+'. Dobara try karo ya model badlo.');
+ return {text,calls,raw,imgs};
+}
+async function run(chat){
+ const mm={role:'model',text:'',t:Date.now(),actions:[],images:[],busy:true};
+ chat.messages.push(mm);render();setBusy(true);
+ abortC=new AbortController();
+ const contents=buildContents(chat.messages.slice(0,-1));
+ try{
+  for(let step=0;step<6;step++){
+   const r=await callGemini(contents,abortC.signal,t=>{mm.text+=t;updateMsg(mm)});
+   r.imgs.forEach(i=>mm.images.push({mime:i.mimeType,b64:i.data}));
+   if(!r.calls.length)break;
+   contents.push({role:'model',parts:r.raw});
+   const resp=[];
+   for(const c of r.calls){const out=await runTool(c,mm);resp.push({functionResponse:{name:c.name,response:{result:out}}})}
+   contents.push({role:'user',parts:resp});
+   updateMsg(mm);
+  }
+  if(!mm.text&&!mm.images.length&&!mm.actions.length)mm.text='(Khaali jawab mila, dobara try karo)';
+ }catch(e){
+  if(e.name==='AbortError'){if(!mm.text)mm.text='(Roka gaya)'}
+  else{mm.error=true;mm.text=(mm.text?mm.text+'\n\n':'')+'⚠️ '+e.message}
+ }
+ mm.busy=false;chat.updated=Date.now();setBusy(false);saveChats();updateMsg(mm,true);renderList();
+ if(!mm.error&&mm.text)speak(mm.text);else resumeListen();
+}
+async function send(textOverride){
+ if(busy)return;
+ const inp=$('#inp');
+ const text=(typeof textOverride==='string'?textOverride:inp.value).trim();
+ const hasLive=!!live.stream&&S.frames;
+ if(!text&&!pending.length&&!hasLive)return;
+ if(!S.apiKey){openSettings();toast('Pehle Gemini API key daalo');return}
+ stopSpeaking();
+ let chat=cur();if(!chat||false)chat=newChat();
+ const images=pending.slice();pending=[];renderPending();
+ if(hasLive&&!images.length){const f=grabFrame();if(f)images.push(f)}
+ chat.messages.push({role:'user',text,images,t:Date.now()});
+ if(chat.messages.length===1)chat.title=(text||'Image chat').slice(0,42);
+ chat.mode=S.mode;inp.value='';autosize();renderList();
+ run(chat);
+}
+function setBusy(b){busy=b;updSend()}
+function updSend(){const s=$('#sendBtn');const stop=busy||speaking;s.classList.toggle('stop',stop);s.innerHTML=ic(stop?'stop':'send')}
+function stopAll(){if(abortC)abortC.abort();stopSpeaking()}
+$('#sendBtn').onclick=()=>{if(busy||speaking)stopAll();else send()};
+
+/* ---------- tools ---------- */
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.4,.8].forEach(d=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.2,a.currentTime+d);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d+.3);o.start(a.currentTime+d);o.stop(a.currentTime+d+.32)})}catch(e){}}
+function notify(t,b){try{if('Notification' in window&&Notification.permission==='granted')new Notification(t,{body:b})}catch(e){}}
+function ring(label){beep();notify('DarkMind',label);toast(label);speak(label,true)}
+async function runTool(c,mm){
+ const a=c.args||{};
+ try{
+  switch(c.name){
+   case 'get_datetime':return new Date().toString();
+   case 'set_timer':{const s=Math.max(1,Math.min(86400,+a.seconds||0));try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}
+    setTimeout(()=>ring('Timer khatam: '+(a.label||'time ho gaya')),s*1000);return `Timer set for ${s} seconds. It only rings while this page stays open.`}
+   case 'set_alarm':{const n=new Date(),t=new Date();t.setHours(+a.hour||0,+a.minute||0,0,0);if(t<=n)t.setDate(t.getDate()+1);
+    try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}
+    setTimeout(()=>ring('Alarm: '+(a.label||'uthne ka time')),t-n);return `Alarm set for ${t.toLocaleString()}. It only rings while this page stays open.`}
+   case 'open_website':{let u=String(a.url||'');if(!/^https?:\/\//i.test(u))u='https://'+u;mm.actions.push({label:a.label||'Open '+u.replace(/^https?:\/\//,'').slice(0,28),href:u});return 'Button shown to the user.'}
+   case 'call_number':mm.actions.push({label:'Call '+(a.name||a.number),href:'tel:'+String(a.number).replace(/[^\d+]/g,'')});return 'Call button shown to the user.';
+   case 'send_sms':mm.actions.push({label:'SMS to '+a.number,href:'sms:'+String(a.number).replace(/[^\d+]/g,'')+'?body='+encodeURIComponent(a.message||'')});return 'SMS button shown to the user.';
+   case 'send_whatsapp':mm.actions.push({label:'WhatsApp '+a.number,href:'https://wa.me/'+String(a.number).replace(/\D/g,'')+'?text='+encodeURIComponent(a.message||'')});return 'WhatsApp button shown to the user.';
+   case 'change_mode':if(MODES[a.mode]){S.mode=a.mode;saveS();$('#modeSel').value=S.mode;applyMode();return 'Mode changed to '+MODES[a.mode].name}return 'Unknown mode';
+   default:return 'Unknown tool';
+  }
+ }catch(e){return 'Tool error: '+e.message}
+}
+
+/* ---------- speech output ---------- */
+function speechText(t){
+ return t.replace(/```[\s\S]*?(```|$)/g,' (code dikhaya gaya hai) ').replace(/`([^`]*)`/g,'$1').replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,' link ')
+  .replace(/[*_#>|~]/g,' ').replace(/\p{Extended_Pictographic}/gu,'').replace(/\s+/g,' ').trim();
+}
+function chunkText(t){
+ const parts=t.match(/[^.!?।؟\n]+[.!?।؟]?/g)||[t];const out=[];let c='';
+ for(const p of parts){if((c+p).length>190&&c){out.push(c.trim());c=p}else c+=p}
+ if(c.trim())out.push(c.trim());return out;
+}
+function voiceFor(text){
+ const vs=speechSynthesis.getVoices();
+ const dev=/[\u0900-\u097F]/.test(text),ar=/[\u0600-\u06FF]/.test(text);
+ const want=dev?'hi':ar?'ur':null;
+ let v=vs.find(x=>x.voiceURI===S.voiceURI);
+ if(want&&(!v||!v.lang.toLowerCase().startsWith(want)))v=vs.find(x=>x.lang.toLowerCase().startsWith(want))||v;
+ return v||null;
+}
+function speak(text,force){
+ if(!('speechSynthesis' in window)||(!force&&!S.autoSpeak)){resumeListen();return}
+ stopSpeaking();
+ const clean=speechText(text);if(!clean){resumeListen();return}
+ const id=++speakId;speaking=true;pauseListen();updSend();
+ const parts=chunkText(clean);
+ parts.forEach((p,i)=>{
+  const u=new SpeechSynthesisUtterance(p);const v=voiceFor(p);
+  if(v){u.voice=v;u.lang=v.lang}else u.lang=/[\u0900-\u097F]/.test(p)?'hi-IN':/[\u0600-\u06FF]/.test(p)?'ur-PK':S.lang;
+  u.rate=+S.rate;u.pitch=+S.pitch;
+  if(i===parts.length-1){const fin=()=>{if(id!==speakId)return;speaking=false;updSend();resumeListen()};u.onend=fin;u.onerror=fin}
+  speechSynthesis.speak(u);
+ });
+}
+function stopSpeaking(){speakId++;speaking=false;try{speechSynthesis.cancel()}catch(e){}updSend()}
+function populateVoices(){
+ if(!('speechSynthesis' in window))return;
+ const vs=speechSynthesis.getVoices();const sel=$('#voiceSel');
+ sel.innerHTML='<option value="">Auto</option>'+vs.map(v=>`<option value="${esc(v.voiceURI)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+ sel.value=S.voiceURI;
+}
+if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=populateVoices}
+
+/* ---------- speech input ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,listening=false,handsFree=false,gotSpeech=false,armedUntil=0;
+function setupRec(){
+ if(!SR)return;
+ rec=new SR();rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+ rec.onstart=()=>{listening=true;gotSpeech=false;updMic()};
+ rec.onresult=e=>{let t='';for(const r of e.results)t+=r[0].transcript;gotSpeech=true;$('#inp').value=t;autosize()};
+ rec.onerror=e=>{
+  if(e.error==='not-allowed'||e.error==='service-not-allowed'){handsFree=false;updMic();toast('Mic ki permission do (browser settings mein)')}
+  else if(e.error==='network')toast('Voice input ke liye internet chahiye');
+ };
+ rec.onend=()=>{
+  listening=false;updMic();
+  const t=$('#inp').value.trim();
+  if(gotSpeech&&t){gotSpeech=false;handleHeard(t)}
+  else resumeListen();
+ };
+}
+function startRec(){
+ if(!rec){toast('Is browser mein voice input nahi hai — Chrome use karo');return}
+ if(listening||busy)return;
+ try{rec.lang=S.lang;rec.start()}catch(e){}
+}
+function pauseListen(){if(listening&&rec){try{rec.abort()}catch(e){}}}
+function resumeListen(){if(handsFree&&!busy&&!speaking)setTimeout(()=>{if(handsFree&&!busy&&!speaking)startRec()},350)}
+function wakeEnd(t){
+ const low=t.toLowerCase();
+ const ph=[(S.wakeWord||'hey mind').toLowerCase().trim(),'hey darkmind','dark mind','darkmind','हे माइंड','डार्क माइंड'];
+ for(const p of ph){if(!p)continue;const i=low.indexOf(p);if(i>=0)return i+p.length}
+ return -1;
+}
+function handleHeard(t){
+ if(handsFree&&S.wake){
+  const e=wakeEnd(t);
+  if(e>=0){const rest=t.slice(e).replace(/^[\s,.!?:-]+/,'');$('#inp').value='';if(rest)send(rest);else{armedUntil=Date.now()+10000;toast('Sun raha hoon…');resumeListen()}}
+  else if(Date.now()<armedUntil){armedUntil=0;send(t)}
+  else{$('#inp').value='';resumeListen()}
+  return;
+ }
+ if(S.autoSend||handsFree)send(t);
+}
+function updMic(){
+ $('#micBtn').classList.toggle('rec',listening);
+ $('#hfBtn').classList.toggle('on',handsFree);
+ const b=$('#banner');
+ if(handsFree){b.classList.add('on');b.textContent=S.wake?'Hands-free ON — bolo: "'+S.wakeWord+'" phir apna sawaal':'Hands-free ON — bas bolo, main sunta rahunga'}
+ else b.classList.remove('on');
+}
+$('#micBtn').onclick=()=>{
+ if(listening){try{rec.stop()}catch(e){}return}
+ stopSpeaking();handsFree=false;updMic();startRec();
+};
+$('#hfBtn').onclick=()=>{
+ if(!SR){toast('Hands-free ke liye Chrome chahiye');return}
+ handsFree=!handsFree;updMic();
+ if(handsFree){stopSpeaking();startRec();applyWake()}else{pauseListen()}
+};
+
+/* ---------- camera / screen ---------- */
+const live={stream:null,kind:null,facing:'environment'};
+function showLive(){
+ const v=$('#liveVid');v.srcObject=live.stream;v.play().catch(()=>{});
+ v.classList.toggle('mirror',live.kind==='camera'&&live.facing==='user');
+ $('#live').classList.add('on');$('#flipBtn').style.display=live.kind==='camera'?'grid':'none';
+ $('#liveLabel').textContent=live.kind==='camera'?(live.facing==='user'?'Front cam':'Back cam'):'Screen';
+ $('#camBtn').classList.toggle('on',live.kind==='camera');$('#scrBtn').classList.toggle('on',live.kind==='screen');
+}
+function stopLive(){
+ if(live.stream)live.stream.getTracks().forEach(t=>t.stop());
+ live.stream=null;live.kind=null;$('#liveVid').srcObject=null;$('#live').classList.remove('on');
+ $('#camBtn').classList.remove('on');$('#scrBtn').classList.remove('on');
+}
+async function startCamera(){
+ stopLive();
+ try{live.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:live.facing},width:{ideal:1280}},audio:false});live.kind='camera';showLive()}
+ catch(e){toast('Camera nahi khula: '+e.message)}
+}
+async function startScreen(){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){toast('Screen share phone ke Chrome mein support nahi hai — PC/laptop Chrome mein chalega');return}
+ stopLive();
+ try{live.stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});live.kind='screen';live.stream.getVideoTracks()[0].onended=stopLive;showLive()}
+ catch(e){toast('Screen share nahi hua: '+e.message)}
+}
+function grabFrame(){
+ const v=$('#liveVid');if(!v.videoWidth)return null;
+ const sc=Math.min(1,1024/v.videoWidth);const c=document.createElement('canvas');
+ c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);
+ const x=c.getContext('2d');
+ if(live.kind==='camera'&&live.facing==='user'){x.translate(c.width,0);x.scale(-1,1)}
+ x.drawImage(v,0,0,c.width,c.height);
+ return {mime:'image/jpeg',b64:c.toDataURL('image/jpeg',.72).split(',')[1]};
+}
+$('#camBtn').onclick=()=>live.kind==='camera'?stopLive():startCamera();
+$('#scrBtn').onclick=()=>live.kind==='screen'?stopLive():startScreen();
+$('#liveClose').onclick=stopLive;
+$('#flipBtn').onclick=()=>{live.facing=live.facing==='user'?'environment':'user';startCamera()};
+$('#snapBtn').onclick=()=>{const f=grabFrame();if(f){pending.push(f);renderPending();toast('Frame attach ho gaya')}};
+$('#autoFrame').onchange=e=>{S.frames=e.target.checked;saveS()};
+
+/* ---------- attachments ---------- */
+function renderPending(){
+ $('#pend').innerHTML=pending.map((p,i)=>`<div class="th"><img src="data:${p.mime};base64,${p.b64}" alt=""><button data-rm="${i}">${ic('x')}</button></div>`).join('');
+}
+$('#pend').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){pending.splice(+b.dataset.rm,1);renderPending()}});
+$('#attachBtn').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{
+ for(const f of e.target.files){
+  try{
+   const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
+   const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+   const sc=Math.min(1,1600/Math.max(img.width,img.height));const c=document.createElement('canvas');
+   c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+   pending.push({mime:'image/jpeg',b64:c.toDataURL('image/jpeg',.82).split(',')[1]});
+  }catch(err){toast('Image nahi khuli')}
+ }
+ e.target.value='';renderPending();
+};
+document.addEventListener('paste',e=>{
+ const items=[...(e.clipboardData&&e.clipboardData.items||[])].filter(i=>i.type.startsWith('image/'));
+ items.forEach(it=>{const f=it.getAsFile();if(!f)return;const r=new FileReader();r.onload=()=>{pending.push({mime:f.type,b64:r.result.split(',')[1]});renderPending()};r.readAsDataURL(f)});
+});
+
+/* ---------- settings ---------- */
+function openSettings(){$('#modal').classList.add('on');populateVoices();populateModels()}
+$('#settingsBtn').onclick=openSettings;
+$('#closeSet').onclick=()=>{$('#modal').classList.remove('on');populateModels()};
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').classList.remove('on')});
+$('#showKey').onclick=()=>{const k=$('#apiKey');k.type=k.type==='password'?'text':'password'};
+function bindSettings(){
+ document.querySelectorAll('[data-s]').forEach(el=>{
+  const k=el.dataset.s;
+  if(el.type==='checkbox')el.checked=!!S[k];else if(el.tagName!=='SELECT')el.value=S[k];
+  const h=()=>{S[k]=el.type==='checkbox'?el.checked:(el.type==='range'||el.type==='number')?+el.value:el.value;saveS();changed(k)};
+  el.addEventListener(el.type==='checkbox'||el.tagName==='SELECT'?'change':'input',h);
+ });
+ $('#autoFrame').checked=!!S.frames;
+}
+function changed(k){
+ if(k==='keepAwake')applyWake();
+ if(k==='lang'&&rec)rec.lang=S.lang;
+ if(k==='model')$('#modelSel').value=S.model;
+ if(k==='wake'||k==='wakeWord')updMic();
+}
+function populateModels(){
+ const list=[...new Set([S.model,...(models.length?models:FALLBACK)])];
+ ['#modelSel','#setModel'].forEach(id=>{const s=$(id);s.innerHTML=list.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');s.value=S.model});
+}
+$('#modelSel').onchange=e=>{S.model=e.target.value;saveS();$('#setModel').value=S.model};
+async function loadModels(){
+ if(!S.apiKey){toast('Pehle API key daalo');return}
+ try{
+  const res=await fetch(`${BASE}/models?pageSize=1000`,{headers:{'x-goog-api-key':S.apiKey}});
+  const j=await res.json();if(!res.ok)throw new Error((j.error&&j.error.message)||res.status);
+  let l=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/',''))
+   .filter(n=>!/embed|imagen|veo|aqa|tts|live|native-audio|robotics/i.test(n));
+  l.sort((a,b)=>(/latest/.test(b)-/latest/.test(a))||b.localeCompare(a));
+  if(!l.length)throw new Error('Koi model nahi mila');
+  models=l;store.set('models',models);populateModels();toast(l.length+' models mil gaye');
+ }catch(e){toast('Models load nahi hue: '+e.message)}
+}
+$('#loadModels').onclick=loadModels;
+$('#testVoice').onclick=()=>speak('Namaste! Main DarkMind hoon. Ye meri awaaz hai.',true);
+function applyMode(){
+ const m=MODES[S.mode]||MODES.buddy;
+ document.documentElement.style.setProperty('--accent',m.color);
+ $('#modeSel').value=S.mode;
+ const c=cur();if(c&&c.messages.length===0)render();
+}
+$('#modeSel').innerHTML=Object.entries(MODES).map(([k,m])=>`<option value="${k}">${m.name}</option>`).join('');
+$('#modeSel').onchange=e=>{S.mode=e.target.value;saveS();const c=cur();if(c){c.mode=S.mode;saveChats()}applyMode();toast(MODES[S.mode].name+' mode on')};
+
+/* ---------- export / import / wipe ---------- */
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function exportAll(){download('darkmind-chats.json',JSON.stringify(chats.map(c=>({id:c.id,title:c.title,mode:c.mode,created:c.created,updated:c.updated,messages:c.messages.map(m=>({role:m.role,text:m.text,t:m.t}))})),null,2),'application/json')}
+$('#exportBtn').onclick=exportAll;$('#exportBtn2').onclick=exportAll;
+$('#dlChat').onclick=()=>{const c=cur();if(!c||!c.messages.length){toast('Chat khaali hai');return}download((c.title||'chat').replace(/[^\w\- ]+/g,'')+'.txt',c.messages.map(m=>(m.role==='user'?'You':'DarkMind')+':\n'+m.text).join('\n\n'))};
+$('#importBtn').onclick=()=>$('#importFile').click();
+$('#importFile').onchange=async e=>{
+ try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j))throw 0;
+  j.forEach(c=>{if(c&&c.messages&&!chats.find(x=>x.id===c.id))chats.push({id:c.id||uid(),title:c.title||'Imported',mode:c.mode||'buddy',created:c.created||Date.now(),updated:c.updated||Date.now(),messages:c.messages})});
+  chats.sort((a,b)=>b.updated-a.updated);saveChats();renderList();toast('Import ho gaya')}catch(err){toast('File sahi nahi hai')}
+ e.target.value='';
+};
+$('#wipeBtn').onclick=()=>{if(confirm('Saari chats aur settings delete ho jayengi. Pakka?')){Object.keys(localStorage).filter(k=>k.startsWith('dm_')).forEach(k=>localStorage.removeItem(k));location.reload()}};
+
+/* ---------- misc ---------- */
+let wl=null;
+async function applyWake(){
+ try{
+  if((S.keepAwake||handsFree)&&'wakeLock' in navigator){if(!wl||wl.released)wl=await navigator.wakeLock.request('screen')}
+  else if(wl){await wl.release();wl=null}
+ }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')applyWake()});
+function autosize(){const t=$('#inp');t.style.height='auto';t.style.height=Math.min(t.scrollHeight,160)+'px'}
+$('#inp').addEventListener('input',autosize);
+$('#inp').addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&!e.shiftKey&&!window.matchMedia('(pointer:coarse)').matches){e.preventDefault();send()}
+});
+$('#menuBtn').onclick=()=>document.body.classList.toggle('sb-open');
+$('#overlay').onclick=()=>document.body.classList.remove('sb-open');
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#modal').classList.remove('on');document.body.classList.remove('sb-open')}});
+
+/* ---------- init ---------- */
+bindSettings();setupRec();populateModels();populateVoices();applyMode();updSend();updMic();
+if(!chats.find(c=>c.id===currentId))currentId=null;
+renderList();render();applyWake();
+if(!S.apiKey)setTimeout(openSettings,400);
+</script>
+</body>
+</html>
